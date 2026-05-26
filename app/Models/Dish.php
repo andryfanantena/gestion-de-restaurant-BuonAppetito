@@ -2,25 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Dish extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'category_id',
+        'category',
         'name',
         'description',
         'price',
         'image_url',
-        'category',
         'rating',
-        'preparation_time'
+        'preparation_time',
+        'is_available'
     ];
 
-    protected $casts = [
-        'price' => 'double',
-        'rating' => 'double',
-    ];
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }

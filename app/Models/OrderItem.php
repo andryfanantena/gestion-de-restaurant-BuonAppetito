@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
@@ -17,17 +16,12 @@ class OrderItem extends Model
         'price'
     ];
 
-    protected $casts = [
-        'price' => 'double',
-        'quantity' => 'integer'
-    ];
-
-    public function order(): BelongsTo
+    public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
-    public function dish(): BelongsTo
+    public function dish()
     {
         return $this->belongsTo(Dish::class);
     }

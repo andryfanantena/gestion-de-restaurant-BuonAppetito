@@ -2,10 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
@@ -13,23 +11,30 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'restaurant_table_id',
         'order_number',
         'total_price',
         'status',
-        'table_number'
+        'table_number',
+        'notes'
     ];
 
-    protected $casts = [
-        'total_price' => 'double',
-    ];
+    // Relation avec les lignes de la commande (OrderItems)
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 
-    public function user(): BelongsTo
+    // Relation avec l'utilisateur qui a passé la commande
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function items(): HasMany
+    // Relation avec la table physique du restaurant
+    public function restaurantTable()
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->belongsTo(RestaurantTable::class);
     }
+    
 }

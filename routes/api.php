@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
-
+use App\Livewire\KitchenDashboard;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -19,6 +19,8 @@ Route::post('/register', [AuthController::class, 'register']);
 // Routes publiques pour la consultation du menu d'affichage Android
 Route::get('/menu/popular', [MenuController::class, 'getPopularDishes']);
 Route::get('/menu', [MenuController::class, 'getAllDishes']);
+
+Route::get('/kitchen', KitchenDashboard::class)->name('kitchen.dashboard');
 
 // Routes protégées par Laravel Sanctum (Jeton Bearer requis)
 Route::middleware('auth:sanctum')->group(function () {
