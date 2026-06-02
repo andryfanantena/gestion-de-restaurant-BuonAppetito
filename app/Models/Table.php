@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class RestaurantTable extends Model
+class Table extends Model
 {
-    protected $fillable = ['table_number', 'status', 'capacity'];
+    protected $fillable = ['number', 'status'];
 
     public function orders(): HasMany
     {

@@ -4,7 +4,6 @@
         <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">Écran Cuisine - BuonAppetito</h1>
-                <p class="text-sm text-gray-500">Mise à jour automatique toutes les 5 secondes</p>
             </div>
             <div class="flex space-x-4">
                 <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
@@ -24,7 +23,7 @@
 
         @if($orders->isEmpty())
             <div class="bg-white p-12 text-center rounded-lg shadow border border-gray-200">
-                <p class="text-gray-500 text-lg font-medium">Aucune commande en cours pour le moment. Calme plat en cuisine !</p>
+                <p class="text-gray-500 text-lg font-medium">Aucune commande en cours pour le moment.</p>
             </div>
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -54,24 +53,17 @@
                                         <li class="flex justify-between text-gray-700">
                                             <span class="font-medium">
                                                 <span class="text-lg font-bold text-gray-900 mr-2">x{{ $item->quantity }}</span> 
-                                                {{ $item->dish->name }}
+                                                {{ $item->dish->name ?? 'Plat inconnu' }}
                                             </span>
-                                            <span class="text-xs text-gray-500 self-center">
-                                                {{ number_format($item->price, 0, ',', ' ') }} Ar
+                                            <span class="text-xs text-gray-400 self-center">
+                                                ({{ $item->dish->preparation_time ?? '15 min' }})
                                             </span>
                                         </li>
                                     @endforeach
                                 </ul>
                             </div>
 
-                            <div class="flex justify-between items-center mb-3 bg-gray-50 p-2 rounded">
-                                <span class="text-xs font-bold text-gray-500">TOTAL COMMANDE :</span>
-                                <span class="text-sm font-bold text-gray-900">
-                                    {{ number_format($order->total_price, 0, ',', ' ') }} Ar
-                                </span>
-                            </div>
-
-                            <div class="flex justify-between text-xs text-gray-500 font-medium pt-2">
+                            <div class="flex justify-between text-xs text-gray-500 font-medium">
                                 <span>Client : {{ $order->user->name ?? 'Anonyme' }}</span>
                                 <span>Reçu à : {{ $order->created_at->format('H:i') }}</span>
                             </div>
@@ -79,17 +71,11 @@
 
                         <div class="bg-gray-50 px-5 py-3 rounded-b-lg border-t border-gray-100">
                             @if($order->status === 'PENDING')
-                                <button 
-                                    wire:click="startPreparation({{ $order->id }})" 
-                                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out text-center text-sm"
-                                >
+                                <button wire:click="startPreparation({{ $order->id }})" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded transition duration-150 text-center text-sm">
                                     Lancer la préparation
                                 </button>
                             @elseif($order->status === 'PREPARING')
-                                <button 
-                                    wire:click="markAsReady({{ $order->id }})" 
-                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out text-center text-sm"
-                                >
+                                <button wire:click="markAsReady({{ $order->id }})" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 text-center text-sm">
                                     Marquer comme Prêt
                                 </button>
                             @endif

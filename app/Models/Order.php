@@ -2,39 +2,34 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
-    use HasFactory;
-
+    // C'est cette liste qui autorise Laravel à insérer les valeurs en base de données
     protected $fillable = [
-        'user_id',
-        'restaurant_table_id',
-        'order_number',
-        'total_price',
-        'status',
-        'table_number',
+        'user_id', 
+        'restaurant_table_id', 
+        'order_number', 
+        'status', 
+        'total_price', 
         'notes'
     ];
 
-    // Relation avec les lignes de la commande (OrderItems)
-    public function items()
-    {
-        return $this->hasMany(OrderItem::class);
-    }
-
-    // Relation avec l'utilisateur qui a passé la commande
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relation avec la table physique du restaurant
-    public function restaurantTable()
+    public function table(): BelongsTo
     {
-        return $this->belongsTo(RestaurantTable::class);
+        return $this->belongsTo(Table::class, 'restaurant_table_id');
     }
-    
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }
