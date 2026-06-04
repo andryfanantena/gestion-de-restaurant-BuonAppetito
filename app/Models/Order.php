@@ -8,14 +8,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
-    // C'est cette liste qui autorise Laravel à insérer les valeurs en base de données
     protected $fillable = [
-        'user_id', 
-        'restaurant_table_id', 
-        'order_number', 
-        'status', 
-        'total_price', 
-        'notes'
+        'user_id',
+        'restaurant_table_id',
+        'order_number',
+        'status',
+        'total_price',
+        'notes',
+    ];
+
+    protected $casts = [
+        'total_price' => 'double',
     ];
 
     public function user(): BelongsTo
@@ -25,7 +28,7 @@ class Order extends Model
 
     public function table(): BelongsTo
     {
-        return $this->belongsTo(Table::class, 'restaurant_table_id');
+        return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
     }
 
     public function items(): HasMany

@@ -13,7 +13,7 @@ class RoleMiddleware
         if (!$request->user() || !in_array($request->user()->role, $roles)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Accès non autorisé. Privilèges insuffisants.'
+                'message' => 'Accès non autorisé. Rôle requis : ' . implode(' ou ', $roles),
             ], 403);
         }
 

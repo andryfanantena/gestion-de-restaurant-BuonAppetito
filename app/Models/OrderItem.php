@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
-    protected $fillable = ['order_id', 'dish_id', 'quantity', 'comment'];
+    protected $fillable = ['order_id', 'dish_id', 'quantity', 'price', 'comment'];
+
+    protected $casts = [
+        'price'    => 'double',
+        'quantity' => 'integer',
+    ];
 
     public function dish(): BelongsTo
     {

@@ -4,15 +4,14 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Order;
-use App\Models\Table;
 
 class KitchenDashboard extends Component
 {
-    public $orders = [];
+    public $orders;
 
-    // Configuration de l'écouteur d'événements Pusher intégrée à Livewire
+    // Écoute l'événement Pusher broadcasté par OrderController
     protected $listeners = [
-        'echo:kitchen-channel,order.placed' => 'refreshOrders'
+        'echo:kitchen-channel,order.placed' => 'refreshOrders',
     ];
 
     public function mount(): void
@@ -28,28 +27,36 @@ class KitchenDashboard extends Component
             ->get();
     }
 
-    public function startPreparing($orderId): void
+    /**
+     * Appelé par le bouton "Lancer la préparation" dans la vue
+     * Méthode nommée startPreparation() pour correspondre au wire:click du Blade
+     */
+    public function startPreparation(int $orderId): void
     {
         $order = Order::find($orderId);
-        if ($order) {
+        if ($order && $order->status === 'PENDING') {
             $order->update(['status' => 'PREPARING']);
-            // Optionnel : émettre un événement ici pour notifier le client mobile
         }
         $this->refreshOrders();
     }
 
-    public function setReady($orderId): void
+    /**
+     * Appelé par le bouton "Marquer comme Prêt"
+     * Méthode nommée markAsReady() pour correspondre au wire:click du Blade
+     */
+    public function markAsReady(int $orderId): void
     {
         $order = Order::find($orderId);
-        if ($order) {
+        if ($order && $order->status === 'PREPARING') {
             $order->update(['status' => 'READY']);
-            // Optionnel : déclencher la notification push Firebase/Pusher au client Kotlin
+            // Le client Android détectera READY via le polling trackOrder (toutes les 5s)
+            // et affichera une notification locale
         }
         $this->refreshOrders();
     }
 
     public function render()
     {
-        return view('livewire.kitchen-dashboard')->with('orders', $this->orders);
+        return view('livewire.kitchen-dashboard', ['orders' => $this->orders]);
     }
 }

@@ -3,72 +3,86 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    /**
+     * POST /api/register
+     * Réponse attendue côté Kotlin : { success, message, user, token }
+     */
+    public function register(Request $request): JsonResponse
     {
-        // Validation des paramètres de la requête
         $fields = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'nullable|string|in:client,serveur,cuisinier,admin'
+            'role'     => 'nullable|string|in:client,server,cook,admin',
         ]);
 
-        // Création de l'utilisateur
         $user = User::create([
-            'name' => $fields['name'],
-            'email' => $fields['email'],
+            'name'     => $fields['name'],
+            'email'    => $fields['email'],
             'password' => Hash::make($fields['password']),
-            'role' => $fields['role'] ?? 'client' // 'client' par défaut si omis
+            'role'     => $fields['role'] ?? 'client',
         ]);
 
-        // Création du jeton d'authentification Sanctum
-        $token = $user->createToken('buonappetitotoken')->plainTextToken;
+        $token = $user->createToken('buonappetito-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'success' => true,
+            'message' => 'Compte créé avec succès.',
+            'user'    => $user,
+            'token'   => $token,
         ], 201);
     }
 
-    public function login(Request $request)
+    /**
+     * POST /api/login
+     * Réponse attendue côté Kotlin : { success, message, user, token }
+     */
+    public function login(Request $request): JsonResponse
     {
         $fields = $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string'
+            'email'    => 'required|string|email',
+            'password' => 'required|string',
         ]);
 
-        // Recherche de l'utilisateur par e-mail
         $user = User::where('email', $fields['email'])->first();
 
-        // Vérification de l'existence de l'utilisateur et du mot de passe haché
         if (!$user || !Hash::check($fields['password'], $user->password)) {
             return response()->json([
-                'message' => 'Identifiants incorrects'
+                'success' => false,
+                'message' => 'Identifiants incorrects.',
+                'user'    => null,
+                'token'   => null,
             ], 401);
         }
 
-        // Génération d'un nouveau jeton d'accès suite à la connexion réussie
-        $token = $user->createToken('buonappetitotoken')->plainTextToken;
+        $token = $user->createToken('buonappetito-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'success' => true,
+            'message' => 'Connexion réussie.',
+            'user'    => $user,
+            'token'   => $token,
         ], 200);
     }
 
-    public function logout(Request $request)
+    /**
+     * POST /api/logout
+     * Révoque le token Sanctum courant
+     */
+    public function logout(Request $request): JsonResponse
     {
-        // Révocation (suppression) du token utilisé pour la requête actuelle
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Déconnexion réussie. Jeton révoqué.'
+            'success' => true,
+            'message' => 'Déconnexion réussie.',
         ], 200);
     }
 }

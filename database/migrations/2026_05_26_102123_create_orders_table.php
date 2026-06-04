@@ -9,9 +9,8 @@ return new class extends Migration {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('restaurant_table_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('table_id')->nullable()->constrained('tables')->onDelete('set null');
             $table->string('order_number')->unique();
-            
             $table->string('status')->default('PENDING'); 
             $table->decimal('total_price', 10, 2);
             $table->text('notes')->nullable();

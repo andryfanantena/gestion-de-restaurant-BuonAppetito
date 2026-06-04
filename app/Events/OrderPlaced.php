@@ -13,11 +13,11 @@ class OrderPlaced implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $order;
+    public Order $order;
 
     public function __construct(Order $order)
     {
-        // Chargement immédiat des dépendances pour la vue cuisine
+        // Charger les relations nécessaires au dashboard cuisine
         $this->order = $order->load(['items.dish', 'table', 'user']);
     }
 
@@ -29,5 +29,19 @@ class OrderPlaced implements ShouldBroadcast
     public function broadcastAs(): string
     {
         return 'order.placed';
+    }
+
+    /**
+     * Données envoyées au dashboard cuisine via Pusher
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'id'           => $this->order->id,
+            'order_number' => $this->order->order_number,
+            'status'       => $this->order->status,
+            'table_number' => $this->order->table?->table_number,
+            'items_count'  => $this->order->items->count(),
+        ];
     }
 }

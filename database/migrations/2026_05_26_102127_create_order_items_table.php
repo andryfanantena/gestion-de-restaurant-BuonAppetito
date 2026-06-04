@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->foreignId('dish_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('price', 10, 2); // Prix unitaire au moment de la commande
+            $table->string('comment')->nullable(); // Instructions spéciales (ex: "sans sel")
             $table->timestamps();
         });
     }
