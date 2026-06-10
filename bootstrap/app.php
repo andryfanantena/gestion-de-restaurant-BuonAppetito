@@ -13,15 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Enregistrement de l'alias pour l'utiliser dans routes/api.php ou routes/web.php
-        $middleware->alias([
-            'role' => RoleMiddleware::class
-        ]);
-
-        $middleware->validateCsrfTokens(except: [
-            'api/*',
-        ]);
+        $middleware->alias(['role' => RoleMiddleware::class]);
+        $middleware->validateCsrfTokens(except: ['api/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
     })->create();
