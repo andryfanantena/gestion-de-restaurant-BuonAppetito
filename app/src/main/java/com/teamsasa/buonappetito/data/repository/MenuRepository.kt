@@ -25,4 +25,13 @@ class MenuRepository(private val apiService: ApiService) {
             Result.failure(e)
         }
     }
+
+    suspend fun addDish(dish: Dish): Result<Dish> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.addDish(dish)
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

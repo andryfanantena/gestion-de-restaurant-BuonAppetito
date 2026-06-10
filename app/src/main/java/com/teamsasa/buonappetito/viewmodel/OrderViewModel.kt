@@ -2,8 +2,8 @@ package com.teamsasa.buonappetito.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.teamsasa.buonappetito.data.api.ApiService
 import com.teamsasa.buonappetito.data.model.*
+import com.teamsasa.buonappetito.data.repository.OrderRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class OrderViewModel(private val apiService: ApiService) : ViewModel() {
+class OrderViewModel(private val repository: OrderRepository) : ViewModel() {
 
     private val _trackedOrder = MutableStateFlow<Order?>(null)
     val trackedOrder: StateFlow<Order?> = _trackedOrder.asStateFlow()
@@ -35,10 +35,9 @@ class OrderViewModel(private val apiService: ApiService) : ViewModel() {
         stopTracking()
         trackingJob = viewModelScope.launch {
             while (true) {
-                try {
-                    val order = apiService.trackOrder(orderId)
+                repository.trackOrder(orderId).onSuccess { order ->
                     _trackedOrder.value = order
-                } catch (e: Exception) {
+                }.onFailure { e ->
                     e.printStackTrace()
                 }
                 delay(4000) // Rafraîchit l'état toutes les 4 secondes
@@ -46,37 +45,33 @@ class OrderViewModel(private val apiService: ApiService) : ViewModel() {
         }
     }
 
-    fun stopTracking() {
+    fun stopTracking(clearState: Boolean = true) {
         trackingJob?.cancel()
         trackingJob = null
+        if (clearState) {
+            _trackedOrder.value = null
+        }
     }
 
     // ── Création de commande ─────────────────────────────────────────────────
-    fun checkout(tableNumber: String?, items: List<CartItem>, onResult: (Long) -> Unit) {
+    fun checkout(request: CheckoutRequest, onResult: (Long) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val cartItemRequests = items.map { 
-                    CartItemRequest(dish_id = it.dish.id, quantity = it.quantity, comment = it.comment) 
-                }
-                val request = CheckoutRequest(table_number = tableNumber, items = cartItemRequests)
-                val response = apiService.createOrder(request)
+            repository.createOrder(request).onSuccess { response ->
                 onResult(response.id)
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 e.printStackTrace()
-            } finally {
-                _isLoading.value = false
             }
+            _isLoading.value = false
         }
     }
 
     // ── Historique des commandes ─────────────────────────────────────────────
     fun loadOrderHistory() {
         viewModelScope.launch {
-            try {
-                val history = apiService.getOrderHistory()
+            repository.getOrderHistory().onSuccess { history ->
                 _orderHistory.value = history
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 e.printStackTrace()
             }
         }
@@ -85,10 +80,9 @@ class OrderViewModel(private val apiService: ApiService) : ViewModel() {
     // ── J3 : Fidélité ────────────────────────────────────────────────────────
     fun loadLoyalty() {
         viewModelScope.launch {
-            try {
-                val response = apiService.getLoyalty()
+            repository.getLoyalty().onSuccess { response ->
                 _loyalty.value = response
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 e.printStackTrace()
             }
         }
@@ -97,11 +91,9 @@ class OrderViewModel(private val apiService: ApiService) : ViewModel() {
     // ── J3 : Stripe Intent ───────────────────────────────────────────────────
     fun createPaymentIntent(orderId: Long, convives: Int, onResponse: (PaymentIntentResponse?) -> Unit) {
         viewModelScope.launch {
-            try {
-                val request = PaymentIntentRequest(orderId = orderId, convives = convives)
-                val response = apiService.createPaymentIntent(request)
+            repository.createPaymentIntent(orderId, convives).onSuccess { response ->
                 onResponse(response)
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 e.printStackTrace()
                 onResponse(null)
             }
@@ -112,17 +104,14 @@ class OrderViewModel(private val apiService: ApiService) : ViewModel() {
     fun submitReview(orderId: Long, rating: Int, comment: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val request = ReviewRequest(orderId = orderId, rating = rating, comment = comment)
-                val response = apiService.submitReview(orderId, request)
+            repository.submitReview(orderId, rating, comment).onSuccess { response ->
                 if (response.success) {
                     _reviewSent.value = true
                 }
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 e.printStackTrace()
-            } finally {
-                _isLoading.value = false
             }
+            _isLoading.value = false
         }
     }
 

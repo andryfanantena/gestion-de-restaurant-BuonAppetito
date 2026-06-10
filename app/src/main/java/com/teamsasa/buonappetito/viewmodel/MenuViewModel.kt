@@ -45,4 +45,20 @@ class MenuViewModel(private val repository: MenuRepository) : ViewModel() {
             }
         }
     }
+
+    fun addDish(name: String, description: String, price: Double, category: String, imageUrl: String) {
+        viewModelScope.launch {
+            val newDish = Dish(
+                id = 0, // Backend should assign ID
+                name = name,
+                description = description,
+                price = price,
+                category = category,
+                imageUrl = imageUrl
+            )
+            repository.addDish(newDish).onSuccess {
+                loadMenuData()
+            }
+        }
+    }
 }

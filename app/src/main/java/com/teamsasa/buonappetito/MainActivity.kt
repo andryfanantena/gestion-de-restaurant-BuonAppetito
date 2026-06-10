@@ -21,6 +21,7 @@ import com.teamsasa.buonappetito.ui.auth.RegisterScreen
 import com.teamsasa.buonappetito.ui.cart.CartScreen
 import com.teamsasa.buonappetito.ui.components.EpicureanBottomNavigation
 import com.teamsasa.buonappetito.ui.loyalty.LoyaltyScreen
+import com.teamsasa.buonappetito.ui.menu.AddDishScreen
 import com.teamsasa.buonappetito.ui.menu.DishDetailScreen
 import com.teamsasa.buonappetito.ui.menu.HomeScreen
 import com.teamsasa.buonappetito.ui.menu.MenuScreen
@@ -50,7 +51,7 @@ class MainActivity : ComponentActivity() {
 
                 var currentRoute by remember { mutableStateOf("home") }
 
-                val noBottomBar = listOf("login", "register", "scanner", "payment", "review")
+                val noBottomBar = listOf("login", "register", "scanner", "payment", "review", "add_dish")
 
                 Scaffold(
                     bottomBar = {
@@ -95,7 +96,8 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(
                                 viewModel          = menuViewModel,
                                 authViewModel      = authViewModel,
-                                onNavigateToDetail = { dishId -> navController.navigate("detail/$dishId") }
+                                onNavigateToDetail = { dishId -> navController.navigate("detail/$dishId") },
+                                onNavigateToProfile = { navController.navigate("profile") }
                             )
                         }
                         composable("menu") {
@@ -135,10 +137,13 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("scanner") {
                             currentRoute = "scanner"
-                            QrScannerScreen(onQrCodeScanned = { tableInfo ->
-                                cartViewModel.setTableNumber(tableInfo)
-                                navController.popBackStack()
-                            })
+                            QrScannerScreen(
+                                onQrCodeScanned = { tableInfo ->
+                                    cartViewModel.setTableNumber(tableInfo)
+                                    navController.popBackStack()
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                         composable(
                             route     = "track/{orderId}",
@@ -152,7 +157,8 @@ class MainActivity : ComponentActivity() {
                                 cartViewModel       = cartViewModel,
                                 menuViewModel       = menuViewModel,
                                 onNavigateToPayment = { id, total -> navController.navigate("payment/$id/$total") },
-                                onNavigateToReview  = { id, num -> navController.navigate("review/$id/$num") }
+                                onNavigateToReview  = { id, num -> navController.navigate("review/$id/$num") },
+                                onBack              = { navController.popBackStack() }
                             )
                         }
                         composable(
@@ -214,13 +220,25 @@ class MainActivity : ComponentActivity() {
                                 orderViewModel      = orderViewModel,
                                 onLogout            = { authViewModel.logout { navController.navigate("login") { popUpTo(0) } } },
                                 onNavigateToHistory = { navController.navigate("history") },
-                                onNavigateToLoyalty = { navController.navigate("loyalty") }
+                                onNavigateToLoyalty = { navController.navigate("loyalty") },
+                                onNavigateToAddDish = { navController.navigate("add_dish") }
                             )
                         }
                         composable("history") {
-                            currentRoute = "profile"
+                            currentRoute = "history"
                             LaunchedEffect(Unit) { orderViewModel.loadOrderHistory() }
-                            OrderHistoryScreen(viewModel = orderViewModel)
+                            OrderHistoryScreen(
+                                viewModel = orderViewModel,
+                                onOrderClick = { orderId -> navController.navigate("track/$orderId") },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("add_dish") {
+                            currentRoute = "add_dish"
+                            AddDishScreen(
+                                viewModel = menuViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                     }
                 }

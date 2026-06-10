@@ -20,6 +20,9 @@ interface ApiService {
     @GET("menu")
     suspend fun getAllDishes(@Query("category") category: String?): List<Dish>
 
+    @POST("menu")
+    suspend fun addDish(@Body dish: Dish): Dish
+
     @POST("orders")
     suspend fun createOrder(@Body request: CheckoutRequest): Order
 

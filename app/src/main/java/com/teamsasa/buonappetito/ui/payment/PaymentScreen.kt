@@ -1,4 +1,4 @@
-package com.teamsasa.buonappetito.ui.payement
+package com.teamsasa.buonappetito.ui.payment
 
 
 import androidx.compose.foundation.background
@@ -12,13 +12,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.rememberPaymentSheet
 import com.teamsasa.buonappetito.ui.theme.*
+import com.teamsasa.buonappetito.utils.formatPrice
 import com.teamsasa.buonappetito.viewmodel.OrderViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,16 +42,16 @@ fun PaymentScreen(
     val pricePerPerson = totalPrice / convives
 
     // Initialisation du PaymentSheet de Stripe
-    val paymentSheet = rememberPaymentSheet { paymentResult ->
+    val paymentSheet = rememberPaymentSheet { result ->
         isProcessing = false
-        when (paymentResult) {
-            is PaymentSheet.PaymentResult.Completed -> {
+        when (result) {
+            PaymentSheetResult.Completed -> {
                 onPaymentSuccess()
             }
-            is PaymentSheet.PaymentResult.Failed -> {
-                errorMessage = paymentResult.error.localizedMessage ?: "Le paiement a échoué"
+            is PaymentSheetResult.Failed -> {
+                errorMessage = result.error.localizedMessage ?: "Le paiement a échoué"
             }
-            is PaymentSheet.PaymentResult.Canceled -> {
+            PaymentSheetResult.Canceled -> {
                 // Paiement annulé par l'utilisateur, rien à faire de spécial
             }
         }
@@ -151,14 +154,14 @@ fun PaymentScreen(
                         color = TextMuted
                     )
                     Text(
-                        text = String.format("%.2f €", pricePerPerson),
+                        text = pricePerPerson.formatPrice(),
                         style = EpicureanTypography.displayLarge,
                         color = EpicureanPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     if (convives > 1) {
                         Text(
-                            text = String.format("Sur un total de %.2f €", totalPrice),
+                            text = "Sur un total de ${totalPrice.formatPrice()}",
                             style = EpicureanTypography.bodySmall,
                             color = TextMuted
                         )

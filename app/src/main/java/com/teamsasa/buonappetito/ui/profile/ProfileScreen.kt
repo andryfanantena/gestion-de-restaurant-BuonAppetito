@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,7 +26,8 @@ fun ProfileScreen(
     orderViewModel: OrderViewModel,
     onLogout: () -> Unit,
     onNavigateToHistory: () -> Unit,
-    onNavigateToLoyalty: () -> Unit
+    onNavigateToLoyalty: () -> Unit,
+    onNavigateToAddDish: () -> Unit = {}
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     val loyalty     by orderViewModel.loyalty.collectAsStateWithLifecycle()
@@ -49,16 +51,40 @@ fun ProfileScreen(
         // ── Avatar + infos ────────────────────────────────────────────────────
         Box(
             modifier = Modifier
-                .size(90.dp)
-                .clip(CircleShape)
-                .background(EpicureanPrimary.copy(alpha = 0.15f)),
+                .size(100.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = currentUser?.name?.firstOrNull()?.uppercase() ?: "?",
-                style = EpicureanTypography.displayLarge,
-                color = EpicureanPrimary
-            )
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(CircleShape)
+                    .background(EpicureanPrimary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = currentUser?.name?.firstOrNull()?.uppercase() ?: "?",
+                    style = EpicureanTypography.displayLarge,
+                    color = EpicureanPrimary
+                )
+            }
+            
+            // Edit profile picture icon
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(EpicureanPrimary)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = android.R.drawable.ic_menu_camera),
+                    contentDescription = "Changer la photo",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -111,9 +137,12 @@ fun ProfileScreen(
                 .background(Color.White, RoundedCornerShape(20.dp))
                 .padding(8.dp)
         ) {
+            if (currentUser?.role == "cook" || currentUser?.role == "admin") {
+                ProfileMenuItem(title = "👨‍🍳  Ajouter un plat", onClick = onNavigateToAddDish)
+            }
             ProfileMenuItem(title = "🧾  Mes Commandes",        onClick = onNavigateToHistory)
             ProfileMenuItem(title = "🎁  Programme Fidélité",    onClick = onNavigateToLoyalty)
-            ProfileMenuItem(title = "⚙️  Paramètres",           onClick = {})
+            ProfileMenuItem(title = "📜  Historique des achats", onClick = onNavigateToHistory)
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = EpicureanBg)
             ProfileMenuItem(title = "Déconnexion", isDanger = true, onClick = onLogout)
         }

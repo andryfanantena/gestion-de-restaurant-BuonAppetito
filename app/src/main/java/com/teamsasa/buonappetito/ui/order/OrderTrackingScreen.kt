@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamsasa.buonappetito.data.model.Order
 import com.teamsasa.buonappetito.ui.theme.*
+import com.teamsasa.buonappetito.utils.formatPrice
 import com.teamsasa.buonappetito.viewmodel.CartViewModel
 import com.teamsasa.buonappetito.viewmodel.MenuViewModel
 import com.teamsasa.buonappetito.viewmodel.OrderViewModel
@@ -32,7 +33,8 @@ fun OrderTrackingScreen(
     cartViewModel: CartViewModel,
     menuViewModel: MenuViewModel,
     onNavigateToPayment: (Long, Float) -> Unit,
-    onNavigateToReview: (Long, String) -> Unit
+    onNavigateToReview: (Long, String) -> Unit,
+    onBack: () -> Unit = {}
 ) {
     val orderState by viewModel.trackedOrder.collectAsStateWithLifecycle()
 
@@ -46,7 +48,10 @@ fun OrderTrackingScreen(
             TopAppBar(
                 title = { Text("Suivi de commande", style = EpicureanTypography.titleLarge) },
                 navigationIcon = {
-                    IconButton(onClick = { viewModel.stopTracking() }) {
+                    IconButton(onClick = { 
+                        viewModel.stopTracking(clearState = false)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 },
@@ -130,12 +135,12 @@ fun OrderTrackingScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "${item.quantity}x ${item.dishName}",
+                                        text = "${item.quantity}x ${item.dish.name}",
                                         style = EpicureanTypography.bodyLarge,
                                         color = TextDark
                                     )
                                     Text(
-                                        text = String.format("%.2f €", item.price * item.quantity),
+                                        text = (item.dish.price * item.quantity).formatPrice(),
                                         style = EpicureanTypography.bodyLarge,
                                         color = TextDark,
                                         fontWeight = FontWeight.Medium
@@ -158,7 +163,7 @@ fun OrderTrackingScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = String.format("%.2f €", order.totalPrice),
+                                text = order.totalPrice.formatPrice(),
                                 style = EpicureanTypography.titleLarge,
                                 color = EpicureanPrimary,
                                 fontWeight = FontWeight.Bold
