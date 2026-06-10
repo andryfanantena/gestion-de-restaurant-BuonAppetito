@@ -1,19 +1,27 @@
 package com.teamsasa.buonappetito.ui.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.teamsasa.buonappetito.data.model.LoyaltyResponse
 import com.teamsasa.buonappetito.data.model.User
 import com.teamsasa.buonappetito.ui.theme.*
@@ -31,6 +39,12 @@ fun ProfileScreen(
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     val loyalty     by orderViewModel.loyalty.collectAsStateWithLifecycle()
+    
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> selectedImageUri = uri }
+    )
 
     LaunchedEffect(Unit) { orderViewModel.loadLoyalty() }
 
@@ -58,28 +72,47 @@ fun ProfileScreen(
                 modifier = Modifier
                     .size(90.dp)
                     .clip(CircleShape)
-                    .background(EpicureanPrimary.copy(alpha = 0.15f)),
+                    .background(EpicureanPrimary.copy(alpha = 0.15f))
+                    .clickable { 
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = currentUser?.name?.firstOrNull()?.uppercase() ?: "?",
-                    style = EpicureanTypography.displayLarge,
-                    color = EpicureanPrimary
-                )
+                if (selectedImageUri != null) {
+                    AsyncImage(
+                        model = selectedImageUri,
+                        contentDescription = "Photo de profil",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = currentUser?.name?.firstOrNull()?.uppercase() ?: "?",
+                        style = EpicureanTypography.displayLarge,
+                        color = EpicureanPrimary
+                    )
+                }
             }
             
-            // Edit profile picture icon
+            // Edit profile picture icon (Crayon)
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .size(32.dp)
                     .clip(CircleShape)
                     .background(EpicureanPrimary)
+                    .clickable { 
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
                     .padding(4.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_menu_camera),
+                    imageVector = Icons.Default.Edit,
                     contentDescription = "Changer la photo",
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)

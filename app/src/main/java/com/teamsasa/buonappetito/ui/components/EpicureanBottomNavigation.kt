@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.teamsasa.buonappetito.ui.theme.EpicureanPrimary
 import com.teamsasa.buonappetito.ui.theme.TextMuted
@@ -32,42 +33,36 @@ fun EpicureanBottomNavigation(currentScreen: String, onScreenSelected: (String) 
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 8.dp,
-        modifier = Modifier.height(80.dp)
+        modifier = Modifier.height(72.dp)
     ) {
         items.forEach { item ->
             val isSelected = currentScreen == item.route
             
             NavigationBarItem(
                 icon = {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (isSelected) EpicureanPrimary.copy(alpha = 0.15f) else Color.Transparent)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(
-                                item.icon, 
-                                contentDescription = item.label,
-                                tint = if (isSelected) EpicureanPrimary else TextMuted
-                            )
-                            if (isSelected) {
-                                Text(
-                                    text = item.label,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = EpicureanPrimary
-                                )
-                            }
-                        }
-                    }
+                    Icon(
+                        item.icon, 
+                        contentDescription = item.label,
+                        modifier = Modifier.size(26.dp)
+                    )
+                },
+                label = {
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
                 },
                 selected = isSelected,
                 onClick = { onScreenSelected(item.route) },
                 colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = EpicureanPrimary,
+                    selectedTextColor = EpicureanPrimary,
+                    unselectedIconColor = TextMuted,
+                    unselectedTextColor = TextMuted,
                     indicatorColor = Color.Transparent
                 ),
-                alwaysShowLabel = false
+                alwaysShowLabel = true
             )
         }
     }

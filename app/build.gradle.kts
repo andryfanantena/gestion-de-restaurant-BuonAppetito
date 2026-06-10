@@ -73,8 +73,15 @@ dependencies {
     // Coil for images
     implementation(libs.coil.compose)
     
-    // ZXing for QR Scanner
+    // ZXing for QR Scanner (Legacy/Fallback)
     implementation(libs.zxing.android.embedded)
+    
+    // CameraX & ML Kit for Embedded Scanning
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.mlkit.barcode.scanning)
 
     // Firebase Messaging
     implementation(platform(libs.firebase.bom))

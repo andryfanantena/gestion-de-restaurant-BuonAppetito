@@ -1,6 +1,12 @@
 package com.teamsasa.buonappetito.ui.order
 
-import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,32 +15,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import com.teamsasa.buonappetito.ui.theme.*
+import java.util.concurrent.Executors
 
+@ExperimentalGetImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScannerScreen(onQrCodeScanned: (String) -> Unit, onBack: () -> Unit = {}) {
-    val scanLauncher = rememberLauncherForActivityResult(
-        contract = ScanContract(),
-        onResult = { result ->
-            result.contents?.let { onQrCodeScanned(it) }
-        }
-    )
-
-    val scanOptions = ScanOptions().apply {
-        setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-        setPrompt("Scannez le QR Code de votre table")
-        setBeepEnabled(true)
-        setOrientationLocked(false)
-    }
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    
+    var isScanningActive by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -48,7 +53,7 @@ fun QrScannerScreen(onQrCodeScanned: (String) -> Unit, onBack: () -> Unit = {}) 
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = Color.Black.copy(alpha = 0.8f)
+        containerColor = Color.Black.copy(alpha = 0.9f)
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(
@@ -63,7 +68,7 @@ fun QrScannerScreen(onQrCodeScanned: (String) -> Unit, onBack: () -> Unit = {}) 
                         color = Color.White
                     )
                     Text(
-                        text = "Veuillez scanner le code présent sur votre table", 
+                        text = "Veuillez placer le code dans le carré ci-dessous", 
                         style = EpicureanTypography.bodyLarge, 
                         color = Color.White.copy(alpha = 0.7f), 
                         modifier = Modifier.padding(top = 8.dp)
@@ -72,43 +77,99 @@ fun QrScannerScreen(onQrCodeScanned: (String) -> Unit, onBack: () -> Unit = {}) 
 
                 Box(
                     modifier = Modifier
-                        .size(260.dp)
-                        .border(BorderStroke(2.dp, EpicureanPrimary), RoundedCornerShape(24.dp)),
+                        .size(280.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.DarkGray.copy(alpha = 0.5f))
+                        .border(BorderStroke(2.dp, Color.White), RoundedCornerShape(24.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Visual guide for scanning frame
-                    Box(
-                        modifier = Modifier
-                            .size(200.dp)
-                            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)), RoundedCornerShape(12.dp))
-                    )
-                    
-                    // Add corner accents to the frame
-                    Box(modifier = Modifier.size(260.dp)) {
+                    if (isScanningActive) {
+                        AndroidView(
+                            factory = { ctx ->
+                                val previewView = PreviewView(ctx)
+                                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+
+                                cameraProviderFuture.addListener({
+                                    val cameraProvider = cameraProviderFuture.get()
+                                    val preview = Preview.Builder().build().also {
+                                        it.setSurfaceProvider(previewView.surfaceProvider)
+                                    }
+
+                                    val barcodeScanner = BarcodeScanning.getClient()
+                                    val imageAnalysis = ImageAnalysis.Builder()
+                                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                        .build()
+
+                                    imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy: ImageProxy ->
+                                        val mediaImage = imageProxy.image
+                                        if (mediaImage != null) {
+                                            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                                            barcodeScanner.process(image)
+                                                .addOnSuccessListener { barcodes ->
+                                                    for (barcode in barcodes) {
+                                                        barcode.rawValue?.let { 
+                                                            onQrCodeScanned(it)
+                                                            isScanningActive = false 
+                                                        }
+                                                    }
+                                                }
+                                                .addOnCompleteListener {
+                                                    imageProxy.close()
+                                                }
+                                        } else {
+                                            imageProxy.close()
+                                        }
+                                    }
+
+                                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                                    try {
+                                        cameraProvider.unbindAll()
+                                        cameraProvider.bindToLifecycle(
+                                            lifecycleOwner,
+                                            cameraSelector,
+                                            preview,
+                                            imageAnalysis
+                                        )
+                                    } catch (exc: Exception) {
+                                        // Handle exceptions
+                                    }
+                                }, ContextCompat.getMainExecutor(ctx))
+                                previewView
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    // Add corner accents to the frame (White instead of Blue/EpicureanPrimary)
+                    Box(modifier = Modifier.size(280.dp)) {
                         val cornerSize = 40.dp
                         val thickness = 4.dp
                         // Top Left
-                        Box(modifier = Modifier.size(cornerSize, thickness).background(EpicureanPrimary, RoundedCornerShape(topStart = thickness)).align(Alignment.TopStart))
-                        Box(modifier = Modifier.size(thickness, cornerSize).background(EpicureanPrimary, RoundedCornerShape(topStart = thickness)).align(Alignment.TopStart))
+                        Box(modifier = Modifier.size(cornerSize, thickness).background(Color.White, RoundedCornerShape(topStart = thickness)).align(Alignment.TopStart))
+                        Box(modifier = Modifier.size(thickness, cornerSize).background(Color.White, RoundedCornerShape(topStart = thickness)).align(Alignment.TopStart))
                         // Top Right
-                        Box(modifier = Modifier.size(cornerSize, thickness).background(EpicureanPrimary, RoundedCornerShape(topEnd = thickness)).align(Alignment.TopEnd))
-                        Box(modifier = Modifier.size(thickness, cornerSize).background(EpicureanPrimary, RoundedCornerShape(topEnd = thickness)).align(Alignment.TopEnd))
+                        Box(modifier = Modifier.size(cornerSize, thickness).background(Color.White, RoundedCornerShape(topEnd = thickness)).align(Alignment.TopEnd))
+                        Box(modifier = Modifier.size(thickness, cornerSize).background(Color.White, RoundedCornerShape(topEnd = thickness)).align(Alignment.TopEnd))
                         // Bottom Left
-                        Box(modifier = Modifier.size(cornerSize, thickness).background(EpicureanPrimary, RoundedCornerShape(bottomStart = thickness)).align(Alignment.BottomStart))
-                        Box(modifier = Modifier.size(thickness, cornerSize).background(EpicureanPrimary, RoundedCornerShape(bottomStart = thickness)).align(Alignment.BottomStart))
+                        Box(modifier = Modifier.size(cornerSize, thickness).background(Color.White, RoundedCornerShape(bottomStart = thickness)).align(Alignment.BottomStart))
+                        Box(modifier = Modifier.size(thickness, cornerSize).background(Color.White, RoundedCornerShape(bottomStart = thickness)).align(Alignment.BottomStart))
                         // Bottom Right
-                        Box(modifier = Modifier.size(cornerSize, thickness).background(EpicureanPrimary, RoundedCornerShape(bottomEnd = thickness)).align(Alignment.BottomEnd))
-                        Box(modifier = Modifier.size(thickness, cornerSize).background(EpicureanPrimary, RoundedCornerShape(bottomEnd = thickness)).align(Alignment.BottomEnd))
+                        Box(modifier = Modifier.size(cornerSize, thickness).background(Color.White, RoundedCornerShape(bottomEnd = thickness)).align(Alignment.BottomEnd))
+                        Box(modifier = Modifier.size(thickness, cornerSize).background(Color.White, RoundedCornerShape(bottomEnd = thickness)).align(Alignment.BottomEnd))
                     }
                 }
 
-                Button(
-                    onClick = { scanLauncher.launch(scanOptions) },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(54.dp),
-                    shape = RoundedCornerShape(27.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EpicureanPrimary, contentColor = Color.White)
-                ) {
-                    Text(text = "Démarrer le scan", style = EpicureanTypography.titleMedium)
+                if (!isScanningActive) {
+                    Button(
+                        onClick = { isScanningActive = true },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).height(54.dp),
+                        shape = RoundedCornerShape(27.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = EpicureanPrimary, contentColor = Color.White)
+                    ) {
+                        Text(text = "Démarrer le scan", style = EpicureanTypography.titleMedium)
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(78.dp))
                 }
             }
         }
